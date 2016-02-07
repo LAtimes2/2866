@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 public class MRGyroHelper {
 
     public static final String TAG = "GYROHELPER";
-    private static final float DEGREE_DRIFT_PER_SECOND = -5f;
+    private static final float DEGREE_DRIFT_PER_SECOND = 0f;
     public final ModernRoboticsI2cGyro gyro;
     private final LinearOpMode linearOpMode;
     private long lastCalibrationTime = System.nanoTime();

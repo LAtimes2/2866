@@ -15,17 +15,15 @@ public class GyroTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         Drive drive = new Drive(hardwareMap, this);
+
+        telemetry.addData("Heading ", drive.gyro.gyro.getIntegratedZValue());
+
         waitForStart();
 
-        int numSamples = 0;
-        double currentSum = 0;
-
         while (opModeIsActive()) {
-            for (int i = 0; i < 25; i++)
-                waitForNextHardwareCycle();
-            currentSum += drive.gyro.gyro.rawZ();
-            numSamples++;
-            Log.e("GYRO", "Average: " + (currentSum / numSamples));
+            telemetry.addData("Heading ", drive.gyro.gyro.getIntegratedZValue());
+
+            sleep(100);
         }
     }
 }

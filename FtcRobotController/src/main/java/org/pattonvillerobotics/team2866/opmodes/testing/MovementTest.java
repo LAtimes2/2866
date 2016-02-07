@@ -12,23 +12,41 @@ import org.pattonvillerobotics.team2866.robotclasses.controllables.Drive;
 @OpMode("Movement Test")
 public class MovementTest extends LinearOpMode {
 
+    enum TestType {
+        ForwardDistance,
+        TurnWithEncoders,
+        TurnWithGyro
+    }
+
     public static final String TAG = MovementTest.class.getSimpleName();
 
     @Override
     public void runOpMode() throws InterruptedException {
+
         Drive drive = new Drive(this.hardwareMap, this);
         waitForStart();
 
-        final boolean distanceMode = false;
+
+        final TestType test = TestType.TurnWithGyro;
         //noinspection ConstantConditions
-        if (distanceMode) {
+        if (test == TestType.ForwardDistance) {
             telemetry.addData(TAG, "Moving 100 inches...");
             drive.moveInches(Direction.FORWARDS, 100, 1);
             telemetry.addData(TAG, "Finished moving.");
-        } else {
+        } else if (test == TestType.TurnWithEncoders) {
             telemetry.addData(TAG, "Rotating 4 times (1440 deg)...");
             drive.rotateDegrees(Direction.RIGHT, 1440, 1);
             telemetry.addData(TAG, "Finished rotation.");
+        } else if (test == TestType.TurnWithGyro) {
+            telemetry.addData(TAG, "Rotating 90 degrees and back...");
+            telemetry.addData("Heading ", drive.gyro.gyro.getIntegratedZValue());
+            drive.rotateDegreesGyro(Direction.RIGHT, 90, 1);
+            telemetry.addData("Heading ", drive.gyro.gyro.getIntegratedZValue());
+            sleep(3000);
+            drive.rotateDegreesGyro(Direction.LEFT, 90, 1);
+            telemetry.addData("Heading ", drive.gyro.gyro.getIntegratedZValue());
+            telemetry.addData(TAG, "Finished rotation.");
+            sleep (60000);
         }
     }
 }
