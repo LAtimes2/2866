@@ -27,13 +27,20 @@ public class Drive {
     public static final double WHEEL_BASE_CIRCUMFERENCE = Math.PI * WHEEL_BASE_DIAMETER;
     public static final int DEGREES_PER_REVOLUTION = 360;
     public static final double INCHES_PER_DEGREE = WHEEL_BASE_CIRCUMFERENCE / DEGREES_PER_REVOLUTION;
-    public static final double POWER_SCALE = .002;
     private static final String TAG = "Drive";
     private static int numInstantiations = 0;
     public final DcMotor motorLeft;
     public final DcMotor motorRight;
     public final MRGyroHelper gyro;
     private final LinearOpMode linearOpMode;
+
+    /// NEW
+    private static final double POWER_SCALE = 0.02;    // 2 percent power per degree of error
+    private static final double I = 0.0;    // Integral factor
+    private static final double D = 0.0;    // Derivative factor
+    int previous_error = 0;
+    int total_error = 0;
+    /// end NEW
 
     public Drive(HardwareMap hardwareMap, LinearOpMode linearOpMode) {
         this.linearOpMode = linearOpMode;
@@ -117,6 +124,101 @@ public class Drive {
         Log.e(TAG, "Started encoder move...");
         while (this.linearOpMode.opModeIsActive() &&
                 Math.abs(motorLeft.getCurrentPosition() - targetPositionLeft) > Config.ENCODER_MOVEMENT_TOLERANCE) {
+
+            this.waitForNextHardwareCycle();
+        }
+        Log.e(TAG, "Finished encoder move...");
+
+        this.waitForNextHardwareCycle();
+
+        this.stopDriveMotors();
+    }
+
+    public void moveInchesGyro(Direction direction, double inches, double power) {
+
+/// NEW
+        int target_angle = gyro.getIntegratedZValue();
+        int delta_angle;
+        double p_value;
+        double i_value;
+        double d_value;
+        double total_adjust;
+/// end NEW
+
+        if (power > 1 || power < 0)
+            throw new IllegalArgumentException("Power must be positive!");
+        if (inches <= 0)
+            throw new IllegalArgumentException("Distance must be positive!");
+
+        int targetPositionLeft;
+        int targetPositionRight;
+
+        int startPositionLeft = motorLeft.getCurrentPosition();
+        int startPositionRight = motorRight.getCurrentPosition();
+
+        this.waitForNextHardwareCycle();
+
+        switch (direction) {
+            case FORWARDS: {
+                int deltaPosition = (int) Math.round(inchesToTicks(inches));
+                targetPositionLeft = startPositionLeft + deltaPosition;
+                targetPositionRight = startPositionRight + deltaPosition;
+                break;
+            }
+            case BACKWARDS: {
+                int deltaPosition = (int) Math.round(inchesToTicks(inches));
+                targetPositionLeft = startPositionLeft - deltaPosition;
+                targetPositionRight = startPositionRight - deltaPosition;
+                break;
+            }
+            default:
+                throw new IllegalArgumentException("Direction must be FORWARDS or BACKWARDS!");
+        }
+
+        this.waitForNextHardwareCycle();
+
+        motorLeft.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        motorRight.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+
+        this.waitForNextHardwareCycle();
+
+        motorLeft.setTargetPosition(targetPositionLeft);
+        motorRight.setTargetPosition(targetPositionRight);
+
+        this.waitForNextHardwareCycle();
+
+        motorLeft.setPower(leftPowerAdjust(power));
+        motorRight.setPower(rightPowerAdjust(power));
+
+        this.waitForNextHardwareCycle();
+
+        Log.e(TAG, "Started encoder move...");
+        while (this.linearOpMode.opModeIsActive() &&
+                Math.abs(motorLeft.getCurrentPosition() - targetPositionLeft) > Config.ENCODER_MOVEMENT_TOLERANCE) {
+
+/// NEW
+            delta_angle = gyro.getIntegratedZValue() - target_angle;
+
+            total_error = total_error + delta_angle;
+
+            p_value = delta_angle * POWER_SCALE;
+            i_value = total_error * I;
+            d_value = (delta_angle - previous_error) * D;
+
+            total_adjust = p_value + i_value + d_value;
+
+            if (delta_angle > 10) {
+                delta_angle = 10;
+            }
+            if (delta_angle < -10) {
+                delta_angle = -10;
+            }
+
+            motorLeft.setPower(power - total_adjust);
+            motorRight.setPower(power + total_adjust);
+
+            previous_error = delta_angle;
+/// end NEW
 
             this.waitForNextHardwareCycle();
         }

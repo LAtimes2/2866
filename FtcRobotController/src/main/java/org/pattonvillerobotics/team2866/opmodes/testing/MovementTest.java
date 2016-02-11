@@ -31,7 +31,7 @@ public class MovementTest extends LinearOpMode {
         //noinspection ConstantConditions
         if (test == TestType.ForwardDistance) {
             telemetry.addData(TAG, "Moving 100 inches...");
-            drive.moveInches(Direction.FORWARDS, 100, 1);
+            drive.moveInchesGyro(Direction.FORWARDS, 80, 1);
             telemetry.addData(TAG, "Finished moving.");
         } else if (test == TestType.TurnWithEncoders) {
             telemetry.addData(TAG, "Rotating 4 times (1440 deg)...");
